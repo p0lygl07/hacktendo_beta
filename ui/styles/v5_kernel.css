@@ -1,0 +1,11 @@
+.window {
+    min-width: 300px; min-height: 200px;
+    resize: both; overflow: hidden;
+    display: none; flex-direction: column;
+}
+.window-content {
+    flex: 1; padding: 5px; overflow: hidden;
+}
+.xterm-viewport { overflow-y: auto !important; }
+#loading-screen { transition: opacity 0.5s; }
+.admin-mode { border-color: gold !important; box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); }

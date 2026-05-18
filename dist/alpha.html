@@ -1,0 +1,102 @@
+<!-- alpha.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SHADOW BROWSER // ALPHA</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; background: #000; color: #00ff41; font-family: 'Courier New', monospace; overflow: hidden; }
+        #header { background: #003300; padding: 10px; border-bottom: 1px solid #00ff41; display: flex; justify-content: space-between; align-items: center; }
+        #map-container { height: calc(100vh - 50px); display: flex; }
+        #map { flex: 3; height: 100%; }
+        #recon-panel { flex: 1; background: #050505; border-left: 1px solid #00ff41; padding: 15px; overflow-y: auto; }
+        .panel-section { margin-bottom: 20px; border: 1px solid #004400; padding: 10px; }
+        input { width: 100%; background: #000; border: 1px solid #00ff41; color: #00ff41; padding: 5px; margin-bottom: 5px; }
+        button { background: #003300; color: #00ff41; border: 1px solid #00ff41; padding: 5px 10px; cursor: pointer; width: 100%; }
+        button:hover { background: #00ff41; color: #000; }
+        .log-entry { font-size: 12px; margin-bottom: 5px; border-bottom: 1px dashed #003300; padding-bottom: 2px; }
+        .success { color: #00ff41; }
+        .error { color: #ff003c; }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <span>SHADOW BROWSER // v16.0</span>
+        <span>STATUS: ONLINE</span>
+    </div>
+    <div id="map-container">
+        <div id="map"></div>
+        <div id="recon-panel">
+            <div class="panel-section">
+                <h3>WHOIS LOOKUP</h3>
+                <input type="text" id="whois-input" placeholder="example.com">
+                <button onclick="runWhois()">EXECUTE</button>
+            </div>
+            <div class="panel-section">
+                <h3>PING TARGET</h3>
+                <input type="text" id="ping-input" placeholder="192.168.1.1 or domain">
+                <button onclick="runPing()">EXECUTE</button>
+            </div>
+            <div class="panel-section">
+                <h3>RECON LOG</h3>
+                <div id="recon-logs"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize Map
+        const map = L.map('map').setView([20, 0], 2);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+
+        const logsDiv = document.getElementById('recon-logs');
+
+        function addLog(msg, type) {
+            const div = document.createElement('div');
+            div.className = `log-entry ${type}`;
+            div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logsDiv.prepend(div);
+        }
+
+        // Socket Connection (Assumes same domain/port as main app)
+        const socket = io();
+
+        function runWhois() {
+            const domain = document.getElementById('whois-input').value;
+            if(!domain) return;
+            addLog(`Querying WHOIS for ${domain}...`, 'normal');
+            socket.emit('recon_whois', { domain: domain });
+        }
+
+        function runPing() {
+            const target = document.getElementById('ping-input').value;
+            if(!target) return;
+            addLog(`Pinging ${target}...`, 'normal');
+            socket.emit('recon_ping', { target: target });
+        }
+
+        // Listen for results
+        socket.on('recon_result', (data) => {
+            if(data.status === 'SUCCESS') {
+                if(data.latency_ms) {
+                    addLog(`PING: ${data.target} -> ${data.latency_ms}ms`, 'success');
+                } else if(data.org) {
+                    addLog(`WHOIS: ${data.domain} | Org: ${data.org} | Country: ${data.country}`, 'success');
+                    // Optional: Plot on map if IP/Geo data is available
+                    // L.marker([lat, lon]).addTo(map).bindPopup(data.domain).openPopup();
+                }
+            } else {
+                addLog(`ERROR: ${data.msg}`, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

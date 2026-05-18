@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VANGUARD_GEO_INTEL</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { background: #000; color: #00ffff; font-family: 'Courier New', monospace; margin: 0; padding: 20px; overflow: hidden; }
+        #map-canvas { width: 100%; height: 70%; border: 1px solid #004444; background: radial-gradient(circle, #001111 0%, #000 100%); position: relative; }
+        #data-panel { height: 25%; display: flex; gap: 20px; margin-top: 15px; }
+        .data-box { flex: 1; border: 1px solid #004444; padding: 10px; font-size: 11px; overflow-y: auto; background: #050505; }
+        .node-dot { position: absolute; width: 8px; height: 8px; background: #00ffff; border-radius: 50%; box-shadow: 0 0 10px #00ffff; }
+        .ping { animation: ping-ani 2s infinite; }
+        @keyframes ping-ani { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(4); opacity: 0; } }
+        h4 { margin: 0 0 10px 0; border-bottom: 1px solid #004444; color: #fff; }
+    </style>
+</head>
+<body>
+    <div id="map-canvas">
+        <div class="node-dot" style="top: 40%; left: 25%;"><div class="node-dot ping"></div></div>
+        <div class="node-dot" style="top: 35%; left: 50%; background: #ff003c; box-shadow: 0 0 10px #ff003c;"><div class="node-dot ping" style="background: #ff003c;"></div></div>
+    </div>
+    <div id="data-panel">
+        <div class="data-box">
+            <h4>LIVE_OSINT_STREAM</h4>
+            <div id="osint-log">> Fetching WHOIS for BERLIN_NODE...<br>> ORG: Syndicate-DE<br>> LATENCY: 44ms<br>> STATUS: COMPROMISED</div>
+        </div>
+        <div class="data-box">
+            <h4>BOTNET_DISTRIBUTION</h4>
+            > EU_CLUSTERS: 12 Nodes<br>> NA_RELAYS: 08 Nodes<br>> ASIA_EXITS: 04 Nodes<br><br>> GLOBAL_UPTIME: 99.87%
+        </div>
+    </div>
+</body>
+</html>

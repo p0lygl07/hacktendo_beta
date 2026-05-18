@@ -1,0 +1,16 @@
+<script>
+    const SubOS = {
+        openWorldMap: function() {
+            if(!document.getElementById('win-worldmap')){
+                const w = document.createElement('div'); w.id = 'win-worldmap'; w.className = 'window';
+                w.style.cssText = 'top:50px; left:250px; width:900px; height:600px; border-color:var(--map); display:flex;';
+                w.innerHTML = `
+                    <div class="window-header"><span>GEOSPATIAL_VISUALIZER_v1.0</span><i class="fa-solid fa-xmark" onclick="OS.toggle('worldmap')"></i></div>
+                    <div class="window-content"><iframe src="/worldmap" style="width:100%; height:100%; border:none;"></iframe></div>
+                `;
+                document.getElementById('desktop').appendChild(w);
+                OS.makeWindowsDraggable();
+            } else { OS.toggle('worldmap'); }
+        }
+    };
+</script>

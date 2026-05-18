@@ -1,0 +1,11 @@
+{
+    "id": "demo_01",
+    "title": "NAVIGATION",
+    "mentor": "Nyx",
+    "tasks": [
+        {"id": "t1", "desc": "Find User Flag in plain sight", "xp": 500},
+        {"id": "t2", "desc": "Exploit vulnping.sh (RCE) for Task Flag", "xp": 800},
+        {"id": "t3", "desc": "Ask Nyx for Connect Flag", "xp": 300}
+    ],
+    "plugins": ["term", "comms"]
+}

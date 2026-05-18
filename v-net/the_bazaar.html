@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { background: #050505; color: gold; font-family: 'JetBrains Mono', monospace; padding: 40px; }
+        .header { border-bottom: 2px solid gold; padding-bottom: 20px; margin-bottom: 40px; }
+        .item-list { display: flex; flex-direction: column; gap: 20px; }
+        .item { border: 1px solid #333; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .item:hover { border-color: gold; background: rgba(255, 215, 0, 0.05); }
+        .price { font-weight: bold; color: #fff; background: gold; color: #000; padding: 5px 10px; }
+        .status { color: #ff003c; font-size: 10px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>THE_BAZAAR</h1>
+        <span class="status">Live Feed: 14 Operators currently browsing</span>
+    </div>
+
+    <div class="item-list">
+        <div class="item">
+            <div><strong>PACK_01: KERNEL_BREAKER</strong><br><small>Advanced exploits for OmniCorp Relays</small></div>
+            <div class="price">50,000 HXT</div>
+        </div>
+        <div class="item">
+            <div><strong>PACK_02: AEGIS_UPGRADE</strong><br><small>Whitehat defensive logic for Sector 7</small></div>
+            <div class="price">25,000 HXT</div>
+        </div>
+    </div>
+
+    <div id="intel-meta" data-origin="UNKNOWN" data-encryption="NONE" data-leak="MARKET_VOLATILITY: HIGH"></div>
+</body>
+</html>

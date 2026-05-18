@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { background:#000; color:#0f0; font-family:'JetBrains Mono',monospace; padding:0; margin:0; font-size:13px; overflow:hidden; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* HUD Style */
+        #hud { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding: 8px 15px; font-size: 11px; color: #0f0; background: rgba(0, 20, 0, 0.8); z-index: 100; }
+        
+        #output { flex: 1; overflow-y: auto; color: gold; padding: 15px; }
+        .input-line { display: flex; color: gold; padding: 10px 15px; background: #000; border-top: 1px solid #111; }
+        input { background: transparent; border: none; color: #fff; flex: 1; outline: none; font-family: inherit; font-size: 13px; margin-left: 10px; }
+        .prompt { color: gold; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="hud">
+        <span>RANK: <span id="hud-rank">---</span></span>
+        <span>LVL: <span id="hud-lvl">0</span></span>
+        <span>XP: <span id="hud-xp">0/0</span></span>
+        <span>KARMA: <span id="hud-karma">0</span></span>
+    </div>
+
+    <div id="output">
+        <div style="color:gold;">OREK_NETWORK_TERMINAL v1.0.5</div>
+        <div style="color:#666;">Ready for secure packet routing...</div>
+        <br>
+    </div>
+
+    <div class="input-line">
+        <span class="prompt">OREK@SUBSTRATE:~$</span>
+        <input type="text" id="cmd-input" autofocus onkeydown="if(event.key==='Enter') processCmd()">
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+        const input = document.getElementById('cmd-input');
+
+        // --- 1. HUD SYNC ENGINE ---
+        async function updateHUD() {
+            try {
+                const res = await fetch('/api/p/profile');
+                if (!res.ok) return;
+                const data = await res.json();
+                
+                document.getElementById('hud-rank').innerText = data.rank;
+                document.getElementById('hud-lvl').innerText = data.level;
+                document.getElementById('hud-xp').innerText = `${data.xp}/${data.xp_to_next}`;
+                document.getElementById('hud-karma').innerText = data.karma;
+                
+                // Dynamic color based on Karma
+                const karmaColor = data.karma >= 0 ? "#00ffff" : "#ff003c";
+                document.getElementById('hud-karma').style.color = karmaColor;
+            } catch (e) {
+                // Silently wait for pcore to be active
+            }
+        }
+        setInterval(updateHUD, 5000); 
+        updateHUD();
+
+        // --- 2. TERMINAL UTILS ---
+        function print(text, color = "gold") {
+            const div = document.createElement('div');
+            div.style.color = color;
+            div.innerHTML = `> ${text}`;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // --- 3. COMMAND PROCESSOR ---
+        async function processCmd() {
+            const val = input.value.trim();
+            if (!val) return;
+            const [cmd, ...args] = val.split(' ');
+            input.value = '';
+            print(`${val}`, "#fff");
+
+            // PROXY COMMANDS
+            if (cmd === 'proxy') {
+                const action = args[0]; 
+                const relay = args[1] || "relay_01";
+                const method = (action === '--add' || action === '--clear') ? 'POST' : 'GET';
+                const body = method === 'POST' ? JSON.stringify({ action: action.replace('--',''), relay: relay }) : null;
+
+                const res = await fetch('/api/proxy', {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: body
+                });
+                const data = await res.json();
+                
+                if (action === '--status') {
+                    print(data.active.length ? `ACTIVE RELAYS: ${data.active.join(' -> ')}` : "SIGNAL IS TRACEABLE (NO PROXY)");
+                } else {
+                    print(data.msg || "Command executed.");
+                }
+            } 
+            // TOOL INFO COMMAND
+            else if (cmd === 'info') {
+                const toolName = args[0];
+                if (!toolName) {
+                    print("ERROR: Specify a tool name. Usage: info [tool]", "red");
+                    return;
+                }
+                const res = await fetch(`/api/tools/lookup/${toolName}`);
+                const data = await res.json();
+                if (data.success) {
+                    print(`[INTEL] ${data.data.desc}`, "cyan");
+                    print(`[USAGE] ${data.data.usage}`, "gold");
+                } else {
+                    print(data.msg, "red");
+                }
+            }
+            // NPC INTEL COMMAND (Optional NPC Interaction)
+            else if (cmd === 'intel') {
+                try {
+                    const res = await fetch('/api/p/npc');
+                    const npc = await res.json();
+                    print(`[SIGNAL INCOMING: ${npc.name}]`, "#00ff41");
+                    print(`${npc.msg}`, "#fff");
+                } catch(e) {
+                    print("ERROR: NPC connection lost. Check pcore status.", "red");
+                }
+            }
+            else if (cmd === 'clear') { output.innerHTML = ''; }
+            else if (cmd === 'help') {
+                print("AVAILABLE COMMANDS:");
+                print("proxy --add [relay] : Engage a signal bounce");
+                print("proxy --status      : Check current anonymity level");
+                print("proxy --clear       : Drop all relays");
+                print("info [tool]         : Pull data from T-Series Library");
+                print("intel               : Connect to Orek NPC for guidance");
+                print("clear               : Clear the buffer");
+            }
+            else {
+                print(`ERROR: Command '${cmd}' unknown to Orek logic.`, "red");
+            }
+        }
+    </script>
+</body>
+</html>

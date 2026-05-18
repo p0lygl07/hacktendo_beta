@@ -1,0 +1,215 @@
+// HACKTENDO // edeck.html - Persistent Dock & UI
+
+function injectOrekIcons() {
+    console.log("[+] Attempting to inject Orek Dock Icons...");
+    const dock = document.getElementById('dock');
+    
+    if (!dock) {
+        console.error("[-] ERROR: Could not find HTML element with id='dock'. Retrying...");
+        setTimeout(injectOrekIcons, 2000); 
+        return;
+    }
+
+    // 1. Arts & Crafts Icon
+    if (!document.getElementById('btn-arts')) {
+        const btnArts = document.createElement('i');
+        btnArts.id = 'btn-arts';
+        btnArts.className = 'fa-solid fa-box-open dock-item';
+        btnArts.style.color = 'gold';
+        btnArts.title = 'Arts & Crafts Studio';
+        btnArts.onclick = () => OS.openOrekWin('arts-crafts', 'gold', 'ARTS_&_CRAFTS_v1.0');
+        dock.appendChild(btnArts);
+        console.log("[+] Arts & Crafts Icon Mounted.");
+    }
+
+    // 2. ShBrowser Icon
+    if (!document.getElementById('btn-shbrowser')) {
+        const btnSh = document.createElement('i');
+        btnSh.id = 'btn-shbrowser';
+        btnSh.className = 'fa-solid fa-satellite-dish dock-item';
+        btnSh.style.color = 'gold';
+        btnSh.title = 'ShBrowser Analysis';
+        btnSh.onclick = () => OS.openOrekWin('shbrowser', 'gold', 'SH_BROWSER_v1.0');
+        dock.appendChild(btnSh);
+        console.log("[+] ShBrowser Icon Mounted.");
+    }
+
+    // 3. NETWORK TERMINAL Icon
+    if (!document.getElementById('btn-net-term')) {
+        const btnNet = document.createElement('i');
+        btnNet.id = 'btn-net-term';
+        btnNet.className = 'fa-solid fa-terminal dock-item'; 
+        btnNet.style.color = 'gold';
+        btnNet.title = 'Network Terminal';
+        btnNet.onclick = () => OS.openOrekWin('net-term', 'gold', 'OREK_NETWORK_TERMINAL_v1.0');
+        dock.appendChild(btnNet);
+        console.log("[+] Network Terminal Icon Mounted.");
+    }
+    
+    // 4. X-SERIES DECK Icon
+    if (!document.getElementById('btn-x-deck')) {
+        const btnX = document.createElement('i');
+        btnX.id = 'btn-x-deck';
+        btnX.className = 'fa-solid fa-dna dock-item';
+        btnX.style.color = '#ff00ff';
+        btnX.title = 'X-Series Experimental Deck';
+        btnX.onclick = () => OS.openOrekWin('x-deck', '#ff00ff', 'X-SERIES_EXPERIMENTAL_DECK_v1.0');
+        dock.appendChild(btnX);
+        console.log("[+] X-Series Experimental Deck Icon Mounted.");
+    }
+
+    // 5. T-SERIES DECK Icon
+    if (!document.getElementById('btn-t-deck')) {
+        const btnT = document.createElement('i');
+        btnT.id = 'btn-t-deck';
+        btnT.className = 'fa-solid fa-book-skull dock-item';
+        btnT.style.color = '#00ccff'; 
+        btnT.title = 'T-Series Tool & Usage Library';
+        btnT.onclick = () => OS.openOrekWin('t-deck', '#00ccff', 'T-SERIES_TOOL_LIBRARY_v1.0');
+        dock.appendChild(btnT);
+        console.log("[+] T-Series Library Icon Mounted.");
+    }
+
+    // 6. HACK.CHAT Icon (NEW INTEGRATION)
+    if (!document.getElementById('btn-chat')) {
+        const btnChat = document.createElement('i');
+        btnChat.id = 'btn-chat';
+        btnChat.className = 'fa-solid fa-comments dock-item';
+        btnChat.style.color = '#00ff41'; 
+        btnChat.title = 'Secure Hack.Chat Tunnel';
+        btnChat.onclick = () => OS.openOrekWinExternal('https://hack.chat/?hacktendo', '#00ff41', 'HACK_CHAT_ENCRYPTED_TUNNEL');
+        dock.appendChild(btnChat);
+        console.log("[+] Hack.Chat Tunnel Icon Mounted.");
+    }
+}
+
+// 1. THE SILENT MOUNT 
+socket.on('orek_silent_mount', () => {
+    console.log("[!!!] RECEIVED SIGNAL: orek_silent_mount");
+    injectOrekIcons();
+});
+
+// 2. THE DRAMATIC MOUNT
+socket.on('orek_intercept', data => {
+    console.log("[!!!] RECEIVED SIGNAL: orek_intercept");
+    if (document.getElementById('orek-overlay')) return; 
+
+    const color = data.theme === 'whitehat' ? '#00ffff' : '#ff003c';
+    const overlay = document.createElement('div');
+    overlay.id = "orek-overlay";
+    overlay.style.cssText = `position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:30000; display:flex; justify-content:center; align-items:center; backdrop-filter:blur(10px);`;
+    
+    overlay.innerHTML = `
+        <div style="width:400px; background:#000; border:2px solid ${color}; padding:30px; text-align:center; box-shadow:0 0 40px ${color};">
+            <h1 style="color:${color}; letter-spacing:5px; margin:0; font-family:monospace;">OREK_SIGNAL</h1>
+            <p style="color:#fff; margin:20px 0; font-size:12px;">${data.msg}</p>
+            <button id="mount-btn" style="background:${color}; color:#000; border:none; padding:12px 25px; cursor:pointer; font-weight:bold;">MOUNT_MODULES</button>
+        </div>`;
+    
+    document.body.appendChild(overlay);
+
+    document.getElementById('mount-btn').onclick = () => {
+        overlay.remove();
+        injectOrekIcons();
+        OS.openOrekWin('arts-crafts', 'gold', 'ARTS_&_CRAFTS_v1.0');
+        OS.openOrekWin('shbrowser', 'gold', 'SH_BROWSER_v1.0');
+    };
+});
+
+// --- 3. WINDOW MANAGEMENT (INTERNAL & EXTERNAL) ---
+
+// Launcher for Local Modules
+OS.openOrekWin = function(slug, color, title) {
+    const id = `win-${slug}`;
+    if(document.getElementById(id)) {
+        document.getElementById(id).style.display = 'flex';
+        document.getElementById(id).style.zIndex = "10000";
+        return;
+    }
+
+    const w = document.createElement('div');
+    w.id = id; 
+    w.className = 'window draggable'; 
+    w.style.cssText = `position:absolute; top:100px; left:200px; width:900px; height:600px; border:1px solid ${color}; display:flex; flex-direction:column; background:#000; z-index:10000; box-shadow: 0 0 15px rgba(0,0,0,0.5);`;
+    
+    w.innerHTML = `
+        <div class="window-header" style="background:#111; color:${color}; padding:10px; display:flex; justify-content:space-between; align-items:center; cursor:move; font-family:monospace; font-size:12px; border-bottom:1px solid #222;">
+            <span><i class="fa-solid fa-microchip"></i> ${title}</span>
+            <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="document.getElementById('${id}').remove()"></i>
+        </div>
+        <div class="window-content" style="flex:1; overflow:hidden; background:#000;">
+            <iframe src="/${slug}" style="width:100%; height:100%; border:none;"></iframe>
+        </div>`;
+
+    const container = document.getElementById('desktop') || document.body;
+    container.appendChild(w);
+    OS.makeWindowsDraggable(); // ENSURE DRAGGING IS ACTIVE
+};
+
+// Launcher for External Sites
+OS.openOrekWinExternal = function(url, color, title) {
+    const id = `win-ext-${Date.now()}`;
+    const w = document.createElement('div');
+    w.id = id; 
+    w.className = 'window draggable'; 
+    w.style.cssText = `position:absolute; top:150px; left:250px; width:850px; height:550px; border:1px solid ${color}; display:flex; flex-direction:column; background:#000; z-index:10001; box-shadow: 0 0 20px rgba(0,0,0,0.8);`;
+    
+    w.innerHTML = `
+        <div class="window-header" style="background:#111; color:${color}; padding:10px; display:flex; justify-content:space-between; align-items:center; cursor:move; font-family:monospace; font-size:12px; border-bottom:1px solid #222;">
+            <span><i class="fa-solid fa-globe"></i> ${title}</span>
+            <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="this.closest('.window').remove()"></i>
+        </div>
+        <div class="window-content" style="flex:1; overflow:hidden; background:#000;">
+            <iframe src="${url}" style="width:100%; height:100%; border:none;"></iframe>
+        </div>`;
+
+    const container = document.getElementById('desktop') || document.body;
+    container.appendChild(w);
+    OS.makeWindowsDraggable(); // ENSURE DRAGGING IS ACTIVE
+};
+
+// --- NEW: THE DRAGGABLE ENGINE ---
+OS.makeWindowsDraggable = function() {
+    const headers = document.querySelectorAll('.window-header');
+    headers.forEach(header => {
+        header.onmousedown = function(e) {
+            const win = header.parentElement;
+            win.style.zIndex = 20000; // Bring to front on click
+
+            let shiftX = e.clientX - win.getBoundingClientRect().left;
+            let shiftY = e.clientY - win.getBoundingClientRect().top;
+
+            function moveAt(pageX, pageY) {
+                win.style.left = pageX - shiftX + 'px';
+                win.style.top = pageY - shiftY + 'px';
+            }
+
+            function onMouseMove(e) { moveAt(e.pageX, e.pageY); }
+            document.addEventListener('mousemove', onMouseMove);
+
+            header.onmouseup = function() {
+                document.removeEventListener('mousemove', onMouseMove);
+                header.onmouseup = null;
+            };
+        };
+        header.ondragstart = () => false;
+    });
+};
+
+// --- 4. THE GHOST SIGNAL RECEIVER ---
+window.addEventListener('message', function(event) {
+    if (event.data && event.data.command) {
+        console.log("[+] Ghost Signal Forwarded:", event.data.command);
+        const activeSocket = typeof socket !== 'undefined' ? socket : (window.socket || io());
+        
+        if (event.data.command === 'start_daemon') {
+            activeSocket.emit('toggle_daemon', { state: 'start', handle: OS.handle || 'GHOST' });
+        } 
+        else if (event.data.command === 'kill_daemon') {
+            activeSocket.emit('toggle_daemon', { state: 'stop', handle: OS.handle || 'GHOST' });
+        }
+    }
+});
+
+// Run icons on load
+injectOrekIcons();

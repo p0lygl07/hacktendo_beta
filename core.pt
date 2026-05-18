@@ -1,0 +1,263 @@
+import os, pty, json, threading, random, subprocess, base64, glob, zipfile, shutil, time
+from flask import Flask, request, jsonify, send_from_directory
+from flask_socketio import SocketIO, emit
+
+# --- EXPANSION IMPORTS ---
+try: import s_core
+except ImportError: s_core = None
+try: import ecore
+except ImportError: ecore = None
+try: import pcore
+except ImportError: pcore = None
+try: import tcore
+except ImportError: tcore = None
+
+app = Flask(__name__)
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+
+class SystemLedger:
+    def sync(self, handle):
+        path = f"profiles/{handle}.json"
+        os.makedirs("profiles", exist_ok=True)
+        if os.path.exists(path):
+            with open(path, 'r') as f: return json.load(f)
+        # Standardized to 'ledger' to match pcore
+        data = {
+            "handle": handle, "ledger": 750.0, "xp": 0, "level": 1, 
+            "karma": 0, "inventory": [], "bio": "",
+            "nodes": 0, "passive_rate": 0.0
+        }
+        with open(path, 'w') as f: json.dump(data, f)
+        return data
+
+ledger = SystemLedger()
+fd = None
+active_operators = {} 
+
+# --- HELPER BINDING ---
+def bind_route(url, name, func, methods=['GET']):
+    app.add_url_rule(url, name, func, methods=methods)
+
+# --- CORE HTML ROUTES ---
+@app.route('/')
+def index(): return send_from_directory('.', 'deck.html')
+
+@app.route('/s-deck')
+def sub_deck_route(): return send_from_directory('.', 's-deck.html')
+
+@app.route('/e-deck')
+def e_deck_route(): return send_from_directory('.', 'edeck.html')
+
+@app.route('/profile')
+def profile_page(): return send_from_directory('.', 'profile.html')
+
+@app.route('/loader')
+def loader_page(): return send_from_directory('.', 'loader.html')
+
+# --- IDENTITY & TASKS ---
+@app.route('/api/init_identity', methods=['POST'])
+def init_identity():
+    data = request.json
+    handle = data.get('handle', 'OPERATOR').upper()
+    profile = pcore.load_profile(handle) if pcore else ledger.sync(handle)
+    if pcore: pcore.save_profile(profile, handle)
+    active_operators[handle] = time.time()
+    return jsonify({"status": "SUCCESS", "handle": handle, "profile": profile})
+
+@app.route('/api/get_profile', methods=['GET', 'POST'])
+def get_profile():
+    data = request.get_json(silent=True) if request.method == 'POST' else request.args
+    handle = data.get("handle", "OPERATOR")
+    return jsonify(pcore.load_profile(handle) if pcore else ledger.sync(handle))
+
+@app.route('/api/submit_flag', methods=['POST'])
+def submit_flag():
+    data = request.json
+    handle = data.get("handle", "OPERATOR")
+    flag = data.get("flag", "")
+    rewards = {
+        "FLAG{NAV_USER_99}": {"xp": 500, "hxt": 100},
+        "FLAG{RCE_TASK_01}": {"xp": 800, "hxt": 200}
+    }
+    if flag in rewards:
+        r = rewards[flag]
+        if pcore:
+            pcore.add_progress(handle=handle, xp_gain=r['xp'], hxt_gain=r['hxt'])
+        return jsonify({"status": "SUCCESS", "msg": f"Flag Accepted! +{r['xp']} XP"})
+    return jsonify({"status": "ERROR", "msg": "Invalid Flag"}), 400
+
+# --- LORE & MAP EXPANSIONS ---
+@app.route('/api/n/map', methods=['GET'])
+def ncore_map():
+    nodes = [
+        {"id": "OC-0042", "type": "node-npc", "x": 75, "y": 30, "name": "Director Thorne"},
+        {"id": "OREK-NEXUS", "type": "node-backbone", "x": 50, "y": 50, "name": "The Nexus"},
+        {"id": "SARAH-CHEN", "type": "node-npc", "x": 80, "y": 40, "name": "Sarah Chen (Defense)"},
+        {"id": "ELENA-VANCE", "type": "node-npc", "x": 70, "y": 20, "name": "Elena Vance (Intel)"}
+    ]
+    
+    offset = 10
+    for handle in list(active_operators.keys()):
+        nodes.append({
+            "id": handle, 
+            "type": "node-player", 
+            "x": offset, "y": 80, 
+            "name": f"Operator @{handle}"
+        })
+        offset = (offset + 15) % 90
+        
+    return jsonify({"status": "SUCCESS", "nodes": nodes})
+
+@app.route('/api/target/omnicorp', methods=['GET'])
+def target_omnicorp():
+    lore_text = (
+        "\n\033[91m[!!!] WARNING: OMNICORP CENTRAL MAINFRAME [!!!]\033[0m\n"
+        "--------------------------------------------------\n"
+        "Sector 7 Defenses: ACTIVE. Trace Routines: STANDBY.\n"
+        "Target 'Director Thorne' localized at terminal OC-0042.\n"
+        "Aegis Firewall detected. Inject KERNEL_BREAKER to proceed.\n"
+    )
+    return jsonify({"status": "SUCCESS", "text": lore_text})
+
+@app.route('/api/lore/orek_nexus', methods=['GET'])
+def lore_orek():
+    return jsonify({"status": "SUCCESS", "text": "\n[+] The Nexus pulses. Orek left fragments here: 'The Substrate is a womb. Reality is compiling.'\n"})
+
+@app.route('/api/vault/nebula', methods=['GET'])
+def vault_nebula():
+    return jsonify({"status": "SUCCESS", "text": "\n[PROJECT NEBULA] Data corrupted. Decryption key required.\n"})
+
+    @app.route('/api/target/thorne', methods=['GET'])
+def intel_thorne():
+    return jsonify({"status": "SUCCESS", "text": "\n[INTEL] Director Thorne (OC-0042). Executive oversight for Sector 7. High-value target. Cartridge 'pack_director_thorne' required for interception.\n"})
+
+@app.route('/api/target/chen', methods=['GET'])
+def intel_chen():
+    return jsonify({"status": "SUCCESS", "text": "\n[INTEL] Sarah Chen. Lead Cyber-Defense Engineer. Known vulnerability: Quantum-state routing logic. Cartridge 'pack_sarah_chen' required to exploit.\n"})
+
+@app.route('/api/target/vance', methods=['GET'])
+def intel_vance():
+    return jsonify({"status": "SUCCESS", "text": "\n[INTEL] Elena Vance. OmniCorp Intelligence Officer. Handles encrypted Rebel Cell interrogations. Cartridge 'pack_elena_vance' required to extract logs.\n"})
+
+# --- ADMIN UTILITIES ---
+@app.route('/api/admin/wipe_ghost', methods=['POST'])
+def admin_wipe():
+    data = request.json
+    handle = data.get('handle')
+    if not handle: 
+        return jsonify({"status": "ERROR", "msg": "Handle required."}), 400
+    
+    path = f"profiles/{handle}.json"
+    if os.path.exists(path):
+        os.remove(path)
+        return jsonify({"status": "SUCCESS", "msg": f"Profile {handle} purged."})
+    return jsonify({"status": "ERROR", "msg": "Profile not found."}), 404
+
+@app.route('/api/admin/install_cartridge', methods=['POST'])
+def admin_install():
+    file = request.files.get('file')
+    if not file: 
+        return jsonify({"status": "ERROR", "msg": "No file uploaded"}), 400
+    try:
+        target_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cartridges")
+        os.makedirs(target_dir, exist_ok=True)
+        zip_path = os.path.join(target_dir, file.filename)
+        file.save(zip_path)
+        
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(target_dir)
+            
+        os.remove(zip_path)
+        return jsonify({"status": "SUCCESS", "msg": "Cartridge installed and extracted."})
+    except Exception as e:
+        return jsonify({"status": "ERROR", "msg": str(e)}), 500
+
+# --- SOCKET EVENTS ---
+@socketio.on('buy_item')
+def buy_item(data):
+    handle = data.get('handle', 'OPERATOR')
+    cost = float(data.get('cost', 0))
+    profile = pcore.load_profile(handle) if pcore else ledger.sync(handle)
+    if profile.get('ledger', 0) >= cost:
+        if pcore:
+            pcore.add_progress(handle=handle, hxt_cost=cost)
+        else:
+            profile['ledger'] -= cost
+            with open(f"profiles/{handle}.json", 'w') as f: json.dump(profile, f)
+        emit('npc_message', {"sender": "KAGE", "text": f"{data['item']} acquired.", "color": "gold"})
+
+@socketio.on('infect_node')
+def infect_node(data):
+    handle = data.get('handle', 'OPERATOR')
+    profile = pcore.load_profile(handle) if pcore else ledger.sync(handle)
+    if profile.get('ledger', 0) >= 100:
+        if pcore: pcore.add_progress(handle=handle, hxt_cost=100)
+        profile['nodes'] = profile.get('nodes', 0) + 1
+        if not pcore:
+            with open(f"profiles/{handle}.json", 'w') as f: json.dump(profile, f)
+        emit('npc_message', {"sender": "KAGE", "text": "Node compromised.", "color": "var(--vanguard)"})
+
+@socketio.on('npc_chat')
+def npc_chat(data):
+    try:
+        msg = data.get('text', '').upper()
+        handle = data.get('handle', 'OPERATOR')
+        profile = pcore.load_profile(handle) if pcore else ledger.sync(handle)
+        
+        if "STATUS" in msg:
+            resp = f"Operator @{handle}. Level {profile.get('level', 1)}. Nodes: {profile.get('nodes', 0)}."
+            emit('npc_message', {"sender": "NYX", "text": resp, "color": "var(--nyx)"})
+        elif "HELP" in msg:
+            emit('npc_message', {"sender": "P0LYGL07", "text": "Open the World Map to infect nodes for passive HXT.", "color": "var(--vanguard)"})
+            
+        if s_core: s_core.process_chat(data, socketio, ledger) 
+    except Exception as e: 
+        print(f"[SOCKET ERR] {e}")
+
+# --- PTY & BACKGROUND ENGINES ---
+def read_pty():
+    global fd
+    while True:
+        socketio.sleep(0.01)
+        if fd:
+            try:
+                out = os.read(fd, 1024)
+                if out: socketio.emit("terminal_output", {"output": out.decode(errors='ignore')})
+            except: break
+
+@socketio.on("terminal_input")
+def handle_input(data):
+    if fd: os.write(fd, data["input"].encode())
+
+def sniffer_loop():
+    while True:
+        socketio.sleep(1.2)
+        socketio.emit("sniffer_packet", {"raw": f"[TCP] 192.168.1.{random.randint(2, 254)} -> 10.0.0.5"})
+
+def coast_engine():
+    while True:
+        socketio.sleep(60)
+        for handle in list(active_operators.keys()):
+            profile = pcore.load_profile(handle) if pcore else ledger.sync(handle)
+            if profile.get('nodes', 0) > 0:
+                income = profile['nodes'] * 1.5
+                if pcore: pcore.add_progress(handle=handle, hxt_gain=income)
+                socketio.emit('npc_message', {"sender": "SYSTEM", "text": f"COAST: +{income} HXT", "color": "gold"})
+
+# --- EXPANSION MOUNTING (NO DUPLICATES) ---
+if s_core: s_core.init_expansion(app, socketio, ledger)
+if ecore: ecore.init_expansion(app, socketio, ledger)
+if tcore: tcore.t_logic_init(app, bind_route)
+if pcore: pcore.p_logic_init(app, bind_route)
+
+if __name__ == "__main__":
+    m, s = pty.openpty()
+    if os.fork() == 0:
+        os.setsid(); os.dup2(s, 0); os.dup2(s, 1); os.dup2(s, 2); os.execlp("bash", "bash")
+    else:
+        fd = m
+        threading.Thread(target=read_pty, daemon=True).start()
+        threading.Thread(target=sniffer_loop, daemon=True).start()
+        threading.Thread(target=coast_engine, daemon=True).start()
+        socketio.run(app, port=6060, host='0.0.0.0', debug=True, use_reloader=False)

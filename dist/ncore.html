@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>N-CORE // GLOBAL MAP</title>
+    <style>
+        body { background: #000; color: #00f2ff; font-family: monospace; overflow: hidden; margin: 0; }
+        #map-canvas { 
+            width: 100vw; height: 75vh; 
+            background: radial-gradient(circle, #0a1a1a 0%, #000 100%);
+            border-bottom: 2px solid #00f2ff;
+            position: relative;
+        }
+        .node {
+            position: absolute; width: 12px; height: 12px;
+            border-radius: 50%; transform: translate(-50%, -50%);
+            cursor: pointer; box-shadow: 0 0 10px currentColor;
+            z-index: 10; transition: 0.3s;
+        }
+        .node:hover { scale: 1.5; box-shadow: 0 0 20px currentColor; }
+        .node-npc { color: #ff00ff; background: #ff00ff; }
+        .node-player { color: #00ff00; background: #00ff00; }
+        .node-backbone { color: #00f2ff; background: #00f2ff; }
+
+        #console { height: 25vh; background: #050505; padding: 15px; display: flex; gap: 20px; }
+        .block { flex: 1; border: 1px solid #1a3a3a; padding: 10px; overflow-y: auto; font-size: 13px; }
+        .stat { color: #888; margin-bottom: 5px; }
+        .glitch { animation: flash 0.1s infinite; }
+        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.8; } }
+    </style>
+</head>
+<body>
+    <div id="map-canvas"><div id="nodes-layer"></div></div>
+    <div id="console">
+        <div class="block" id="log">> N-CORE LINK STABLE...<br>> WAITING FOR TARGET SELECTION</div>
+        <div class="block" id="whois"><strong>WHOIS ARCHIVE</strong><br>Select a node to trace physical location.</div>
+    </div>
+
+    <script>
+        async function initMap() {
+            const res = await fetch('/api/n/map');
+            const data = await res.json();
+            const container = document.getElementById('nodes-layer');
+
+            Object.entries(data.nodes).forEach(([id, node]) => {
+                const x = ((node.lon + 180) / 360) * window.innerWidth;
+                const y = ((90 - node.lat) / 180) * (window.innerHeight * 0.75);
+                
+                const div = document.createElement('div');
+                div.className = `node node-${node.type}`;
+                div.style.left = x + 'px';
+                div.style.top = y + 'px';
+                div.onclick = () => runTrace(node.handle);
+                container.appendChild(div);
+            });
+        }
+
+        async function runTrace(handle) {
+            const log = document.getElementById('log');
+            log.innerHTML += `<br>> TRACING ${handle.toUpperCase()}...`;
+            
+            const res = await fetch('/api/n/whois', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({target: handle})
+            });
+            const result = await res.json();
+            
+            if (result.success) {
+                const d = result.data;
+                document.getElementById('whois').innerHTML = `
+                    <strong style="color:#fff">TARGET: ${handle}</strong><br>
+                    ISP: ${d.ISP}<br>GEO: ${d.LOC}<br>NODE: ${d.TYPE}<br>LATENCY: ${d.TRACE}
+                `;
+                log.innerHTML += `<br><span style="color:#00ff00">> TRACE SUCCESSFUL.</span>`;
+            }
+        }
+        window.onload = initMap;
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+    "id": "demo_02",
+    "title": "THE_CHOICE",
+    "mentor": "Kage",
+    "tasks": [
+        {"id": "t1", "desc": "Find the User Flag via IDOR", "xp": 600},
+        {"id": "t2", "desc": "Escalate Privileges for Task Flag", "xp": 1000},
+        {"id": "t3", "desc": "Intercept Kage's Connect Flag", "xp": 500}
+    ],
+    "plugins": ["term", "comms"]
+}

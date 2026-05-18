@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>HACKTENDO // IRONCLAD_v15.0</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.1.0/css/xterm.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root { --vanguard: #ff003c; --gold: #ffcc00; --surface: #0a0a0c; --border: #1a1b1e; --nyx: #00ff41; --radar: #0081ff; --decomp: #a855f7; --map: #00ffff; }
+        body { background: #000; color: #fff; font-family: 'JetBrains Mono', monospace; margin: 0; overflow: hidden; height: 100vh; }
+        
+        #boot-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        #desktop { display: flex; height: calc(100vh - 70px); position: relative; }
+        #sidebar { width: 240px; border-right: 1px solid var(--border); background: var(--surface); padding: 25px; display: flex; flex-direction: column; gap: 20px; z-index: 10; }
+        
+        #threat-bar-container { position: absolute; top: 0; left: 240px; right: 0; height: 5px; background: #111; z-index: 5000; display: none; }
+        #threat-bar { height: 100%; width: 0%; background: var(--vanguard); transition: width 1s linear; box-shadow: 0 0 10px var(--vanguard); }
+        #threat-text { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); color: var(--vanguard); font-weight: bold; font-size: 14px; text-shadow: 0 0 5px #000; }
+
+        .window { position: absolute; width: 500px; height: 350px; background: var(--surface); border: 1px solid var(--border); display: none; flex-direction: column; z-index: 100; resize: both; overflow: hidden; box-shadow: 0 10px 40px #000; }
+        .window-header { padding: 12px; background: #111; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; cursor: grab; font-size: 11px; user-select: none; }
+        .window-header:active { cursor: grabbing; }
+        .window-content { flex: 1; overflow: auto; position: relative; }
+
+        #dock { height: 70px; border-top: 1px solid var(--border); background: #000; display: flex; justify-content: center; align-items: center; gap: 35px; z-index: 1000; }
+        .dock-item { color: #8a8d91; font-size: 24px; cursor: pointer; transition: 0.2s; }
+        .dock-item:hover { color: #fff; transform: translateY(-5px); }
+    </style>
+</head>
+<body>
+
+    <div id="boot-screen">
+        <div style="text-align:center;">
+            <h1 style="color:var(--vanguard); letter-spacing:8px;">HACKTENDO</h1>
+            <input type="text" id="handle-in" placeholder="USER_HANDLE" style="background:#000; border:1px solid #333; color:#fff; padding:15px; width:220px; outline:none; text-align:center;">
+            <br><br>
+            <button onclick="OS.boot()" style="background:var(--vanguard); padding:12px 40px; border:none; color:#fff; cursor:pointer; font-weight:bold;">INITIALIZE</button>
+        </div>
+    </div>
+
+    <div id="threat-bar-container"><div id="threat-bar"></div><div id="threat-text">TRACE IN PROGRESS</div></div>
+
+    <div id="desktop">
+        <div id="sidebar">
+            <div style="border: 1px solid #222; padding: 15px; background: #080808; text-align: center;">
+                <div style="font-size: 9px; color: #8a8d91;">HXT_LEDGER</div>
+                <div id="ui-hxt" style="font-size: 20px; color: var(--gold); font-weight: bold;">0.00</div>
+                <div id="ui-passive" style="font-size: 10px; color: var(--nyx); margin-top:5px;">+0.00 HXT/MIN</div>
+            </div>
+            <div style="font-size: 10px; color: #888; text-align:center; margin-top:-10px;">ACTIVE_NODES: <span id="ui-nodes" style="color:var(--map);">0</span></div>
+            <h3 id="ui-handle">@OPERATOR</h3>
+            <button onclick="OS.toggle('hub')" style="padding:10px; background:#111; border:1px solid #333; color:#fff; cursor:pointer; font-size:10px;">MISSION_HUB</button>
+            <button onclick="window.open('/profile?handle=' + OS.handle, '_blank')" style="padding:10px; background:#000; border:1px solid var(--nyx); color:var(--nyx); cursor:pointer; font-size:10px; margin-top:-10px;">VIEW DOSSIER</button>
+        </div>
+
+        <div id="win-term" class="window" style="top:50px; left:300px;">
+            <div class="window-header"><span>BASH_CORE</span><i class="fa-solid fa-xmark" onclick="OS.toggle('term')"></i></div>
+            <div id="xterm-container" class="window-content" style="background:#000; padding:5px;"></div>
+        </div>
+
+        <div id="win-comms" class="window" style="top:50px; left:820px; border-color:var(--nyx);">
+            <div class="window-header"><span>NYX_BRIDGE</span><i class="fa-solid fa-xmark" onclick="OS.toggle('comms')"></i></div>
+            <div id="comms-log" class="window-content" style="padding:15px; font-size:12px;"></div>
+            <div style="display:flex; border-top:1px solid #333;">
+                <input id="chat-in" placeholder="Talk to NPCs..." style="flex:1; background:#000; color:#fff; border:none; padding:10px; outline:none;" onkeypress="if(event.key==='Enter') OS.sendChat()">
+                <button onclick="OS.sendChat()" style="background:#111; color:var(--nyx); border:none; cursor:pointer; padding:0 15px;">[SEND]</button>
+            </div>
+        </div>
+
+        <div id="win-map" class="window" style="top:120px; left:400px; width:550px; height:380px; border-color:var(--map);">
+            <div class="window-header"><span>WORLD_MAP_v1.0</span><i class="fa-solid fa-xmark" onclick="OS.toggle('map')"></i></div>
+            <div class="window-content" style="background:#001111; padding:20px; display:flex; flex-wrap:wrap; gap:15px; align-content: flex-start;">
+                <h3 style="width:100%; color:var(--map); margin-top:0;"><i class="fa-solid fa-network-wired"></i> TARGET NODES</h3>
+                <div onclick="OS.infect()" style="width:90px; height:90px; border:1px solid #004444; background:#000; color:var(--map); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; font-size:10px;">
+                    <i class="fa-solid fa-server" style="font-size:24px; margin-bottom:8px;"></i>
+                    INFECT_NODE
+                    <span style="font-size:8px; color:#666; margin-top:5px;">[100 HXT]</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="win-sniff" class="window" style="top:150px; left:350px; width:450px; border-color:cyan;">
+            <div class="window-header"><span>NET_SNIFFER</span><i class="fa-solid fa-xmark" onclick="OS.toggle('sniff')"></i></div>
+            <div id="sniff-log" class="window-content" style="padding:15px; font-size:11px; color:cyan; font-family:monospace; background:#050505;"></div>
+        </div>
+
+        <div id="win-radar" class="window" style="top:200px; left:400px; width:400px; border-color:var(--radar);">
+            <div class="window-header"><span>RADAR_SCANNER</span><i class="fa-solid fa-xmark" onclick="OS.toggle('radar')"></i></div>
+            <div class="window-content" style="padding:15px; font-size:12px; background:#050505;">
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <input id="radar-target" value="10.0.0.5" style="flex:1; background:#000; color:#fff; border:1px solid #333; padding:8px; outline:none;">
+                    <button onclick="OS.runRadar()" style="background:var(--radar); color:#fff; border:none; padding:8px 15px; cursor:pointer; font-weight:bold;">SCAN</button>
+                </div>
+                <div id="radar-log" style="color:var(--radar); font-family:monospace; white-space:pre-wrap;"></div>
+            </div>
+        </div>
+
+        <div id="win-decomp" class="window" style="top:180px; left:450px; width:400px; border-color:var(--decomp);">
+            <div class="window-header"><span>HEX_DECOMPILER</span><i class="fa-solid fa-xmark" onclick="OS.toggle('decomp')"></i></div>
+            <div class="window-content" style="padding:20px; background:#050505;">
+                <textarea id="decomp-in" rows="4" placeholder="Paste HEX here..." style="width:100%; background:#000; color:#fff; border:1px solid var(--decomp); padding:10px; box-sizing:border-box; outline:none;"></textarea>
+                <button onclick="OS.runDecomp()" style="background:var(--decomp); color:#000; font-weight:bold; border:none; padding:12px; width:100%; cursor:pointer; margin-top:10px;">DECOMPILE</button>
+                <div id="decomp-out" style="margin-top:15px; color:var(--decomp); font-size:12px; font-family:monospace;"></div>
+            </div>
+        </div>
+
+        <div id="win-market" class="window" style="top:120px; left:500px; width:450px; border-color:gold;">
+            <div class="window-header"><span>BLACKMARKET</span><i class="fa-solid fa-xmark" onclick="OS.toggle('market')"></i></div>
+            <div class="window-content" style="padding:20px; background:#050505;">
+                <div style="border:1px solid #333; padding:15px; display:flex; justify-content:space-between; align-items:center;">
+                    <div><b style="color:#fff;">Proxy Bouncer</b><br><span style="font-size:10px; color:#888;">Doubles trace time.</span></div>
+                    <button onclick="socket.emit('buy_item', {item: 'Proxy Bouncer', cost: 500})" style="background:gold; color:#000; border:none; padding:8px 15px; font-weight:bold; cursor:pointer;">[500 HXT]</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="win-hub" class="window" style="top:100px; left:400px; width:400px; height:auto;">
+            <div class="window-header"><span>CARTRIDGES</span><i class="fa-solid fa-xmark" onclick="OS.toggle('hub')"></i></div>
+            <div class="window-content" style="padding:20px;">
+                <div onclick="OS.deploy('demo_01')" style="border:1px solid #333; padding:15px; margin-bottom:10px; cursor:pointer;">[DEMO_01] NAVIGATION</div>
+                <div onclick="OS.deploy('demo_02')" style="border:1px solid #333; padding:15px; margin-bottom:10px; cursor:pointer;">[DEMO_02] THE_CHOICE</div>
+                <div onclick="OS.deploy('demo_03')" style="border:1px solid var(--decomp); padding:15px; cursor:pointer; color:var(--decomp);">[DEMO_03] AEGIS_PROTOCOL</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dock">
+        <i class="fa-solid fa-terminal dock-item" style="color:var(--nyx);" onclick="OS.toggle('term')" title="Terminal"></i>
+        <i class="fa-solid fa-message dock-item" style="color:#fff;" onclick="OS.toggle('comms')" title="Comms"></i>
+        <i class="fa-solid fa-satellite-dish dock-item" style="color:cyan;" onclick="OS.toggle('sniff')" title="Sniffer"></i>
+        <i class="fa-solid fa-wifi dock-item" style="color:var(--radar);" onclick="OS.toggle('radar')" title="Radar"></i>
+        <i class="fa-solid fa-globe dock-item" style="color:var(--map);" onclick="OS.toggle('map')" title="World Map"></i>
+        <i class="fa-solid fa-microchip dock-item" style="color:var(--decomp);" onclick="OS.toggle('decomp')" title="Decompiler"></i>
+        <i class="fa-solid fa-cart-shopping dock-item" style="color:gold;" onclick="OS.toggle('market')" title="Blackmarket"></i>
+        <i class="fa-solid fa-user-secret dock-item" style="color:var(--vanguard);" onclick="window.open('/profile?handle=' + OS.handle, '_blank')" title="Dossier"></i>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.1.0/lib/xterm.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io.connect('http://' + document.domain + ':' + location.port);
+        const OS = {
+            handle: "GHOST",
+            boot: async function() {
+                this.handle = document.getElementById('handle-in').value || "GHOST";
+                const res = await fetch('/api/init_identity', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ handle: this.handle }) });
+                const data = await res.json();
+                document.getElementById('boot-screen').style.display = 'none';
+                document.getElementById('ui-handle').innerText = "@" + this.handle;
+                document.getElementById('ui-hxt').innerText = parseFloat(data.profile.currency).toFixed(2);
+                document.getElementById('ui-nodes').innerText = data.profile.nodes || 0;
+                document.getElementById('ui-passive').innerText = `+${(data.profile.nodes * 1.5).toFixed(2)} HXT/MIN`;
+                this.initTerminal(); this.makeWindowsDraggable(); this.toggle('term'); this.toggle('comms');
+            },
+            toggle: function(id) {
+                const win = document.getElementById(`win-${id}`);
+                if(win) { win.style.display = (win.style.display === 'flex') ? 'none' : 'flex'; win.style.zIndex = 1000; }
+            },
+            deploy: async function(id) {
+                const res = await fetch('/api/load_cartridge', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ cartridge_id: id, handle: this.handle }) });
+                const data = await res.json(); this.toggle('hub');
+                socket.emit('terminal_input', { input: `cd ${data.path} && clear && ls -l\n` });
+            },
+            infect: function() { socket.emit('infect_node', { handle: this.handle }); },
+            sendChat: function() {
+                const input = document.getElementById('chat-in'); if(!input.value) return;
+                socket.emit('npc_chat', { text: input.value, handle: this.handle });
+                document.getElementById('comms-log').innerHTML += `<div style="opacity:0.6; margin-bottom:5px;"><b>[@${this.handle}]</b>: ${input.value}</div>`;
+                input.value = ""; document.getElementById('comms-log').scrollTop = document.getElementById('comms-log').scrollHeight;
+            },
+            runRadar: function() { socket.emit('run_radar', { target: document.getElementById('radar-target').value }); document.getElementById('radar-log').innerHTML = ""; },
+            runDecomp: function() { socket.emit('run_decomp', { hex: document.getElementById('decomp-in').value }); },
+            initTerminal: function() {
+                if(window.term) return;
+                window.term = new Terminal({ theme: { background: '#0a0a0c', foreground: '#00ff41' }, cursorBlink: true });
+                window.term.open(document.getElementById('xterm-container'));
+                window.term.onData(data => socket.emit('terminal_input', { input: data }));
+            },
+            makeWindowsDraggable: function() {
+                document.querySelectorAll('.window').forEach(win => {
+                    const header = win.querySelector('.window-header');
+                    header.onmousedown = function(e) {
+                        e.preventDefault(); win.style.zIndex = 1000;
+                        let shiftX = e.clientX - win.getBoundingClientRect().left; let shiftY = e.clientY - win.getBoundingClientRect().top;
+                        function moveAt(pageX, pageY) { win.style.left = pageX - shiftX + 'px'; win.style.top = pageY - shiftY + 'px'; }
+                        function onMouseMove(event) { moveAt(event.pageX, event.pageY); }
+                        document.addEventListener('mousemove', onMouseMove);
+                        document.onmouseup = function() { document.removeEventListener('mousemove', onMouseMove); document.onmouseup = null; };
+                    };
+                });
+            }
+        };
+
+        socket.on('terminal_output', data => window.term && window.term.write(data.output));
+        socket.on('npc_message', data => {
+            const log = document.getElementById('comms-log');
+            log.innerHTML += `<div style="border-left:2px solid ${data.color}; padding-left:10px; margin-bottom:10px;"><b>[${data.sender}]</b>: ${data.text}</div>`;
+            log.scrollTop = log.scrollHeight;
+            if(data.sender === "KAGE" && data.text.includes("Node compromised")) {
+                const nodes = document.getElementById('ui-nodes');
+                nodes.innerText = parseInt(nodes.innerText) + 1;
+                document.getElementById('ui-passive').innerText = `+${(parseInt(nodes.innerText)*1.5).toFixed(2)} HXT/MIN`;
+            }
+        });
+        socket.on('decomp_result', data => document.getElementById('decomp-out').innerText = data.msg);
+        socket.on('sniffer_packet', data => {
+            const log = document.getElementById('sniff-log');
+            if(log && document.getElementById('win-sniff').style.display === 'flex') {
+                log.innerHTML = `<div>[${new Date().toLocaleTimeString()}] ${data.raw}</div>` + log.innerHTML;
+            }
+        });
+        socket.on('radar_output', data => { document.getElementById('radar-log').innerHTML += `<div>${data.msg}</div>`; });
+        socket.on('trace_alert', data => {
+            const bar = document.getElementById('threat-bar');
+            document.getElementById('threat-bar-container').style.display = 'block';
+            bar.style.width = data.percent + '%'; document.getElementById('threat-text').innerText = data.msg;
+            if(data.percent >= 100 || data.percent === 0) setTimeout(() => { document.getElementById('threat-bar-container').style.display = 'none'; }, 5000);
+        });
+    </script>
+        <script src="/s-deck"></script>
+        <script src="/e-deck"></script> 
+</body>
+</html>

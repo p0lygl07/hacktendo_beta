@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { background:#080808; color:#fff; font-family:'JetBrains Mono',monospace; padding:30px; margin:0; }
+        .grid { display: grid; grid-template-columns: 280px 1fr; gap: 30px; height: 90vh; }
+        .sidebar { border-right: 1px solid #222; padding-right: 20px; }
+        .card { border:1px solid #333; padding:20px; margin-bottom:20px; background:#000; transition: 0.2s; }
+        .card:hover { border-color:gold; box-shadow:0 0 10px gold; }
+        .btn { background:gold; color:#000; border:none; padding:10px 20px; font-weight:bold; cursor:pointer; margin-top:10px; margin-right: 10px; transition: 0.2s; }
+        .btn:hover { background:#fff; transform: scale(1.05); }
+        .btn-kill { background:#ff003c; color:#fff; }
+        .btn-kill:hover { background:#ff4d4d; color:#000; }
+        
+        /* Drag & Drop Styling */
+        .zip-mount { border:2px dashed #444; padding:20px; text-align:center; color:#666; margin-top:20px; cursor:pointer; transition: 0.2s; background:#050505;}
+        .zip-mount:hover, .zip-mount.dragover { border-color:gold; color:gold; background:#111;}
+    </style>
+</head>
+<body>
+    <div class="grid">
+        <div class="sidebar">
+            <h2 style="color:gold;">OREK_STUDIO</h2>
+            <p style="font-size:11px; color:#888;">Install .zip packs to unlock new missions and tools.</p>
+            
+            <input type="file" id="zip-input" accept=".zip" style="display:none;">
+            <div id="drop-zone" class="zip-mount">
+                <i class="fa-solid fa-box-open" style="font-size:30px;"></i><br><br>MOUNT_PACK.ZIP
+            </div>
+
+        </div>
+        <div class="main">
+            <h1>ARTS & CRAFTS // ACTIVE MODULES</h1>
+            
+            <div class="card">
+                <h3 style="color:gold;">[TOOL] DEEP_GRID_SNIFFER_v1</h3>
+                <p>Run a background daemon to intercept live V-Net traffic.</p>
+                <div style="font-size:10px; color:cyan; margin-bottom:15px;">WARNING: +1 HEAT PER CYCLE</div>
+                <button class="btn" onclick="triggerSniffer()">RUN DAEMON</button>
+                <button class="btn btn-kill" onclick="killSniffer()">KILL DAEMON</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function triggerSniffer() { window.parent.postMessage({ command: 'start_daemon' }, '*'); }
+        function killSniffer() { window.parent.postMessage({ command: 'kill_daemon' }, '*'); }
+
+        // --- DRAG & DROP INGESTION LOGIC ---
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('zip-input');
+
+        dropZone.onclick = () => fileInput.click();
+        
+        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('dragover'); };
+        dropZone.ondragleave = (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); };
+        
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) uploadZip(e.dataTransfer.files[0]);
+        };
+        
+        fileInput.onchange = (e) => {
+            if (e.target.files.length) uploadZip(e.target.files[0]);
+        };
+
+        function uploadZip(file) {
+            if (!file.name.endsWith('.zip')) {
+                alert("SYSTEM ERROR: Only .zip payloads accepted.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            dropZone.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size:30px; color:gold;"></i><br><br>EXTRACTING...';
+
+            fetch('/mount_pack', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    dropZone.innerHTML = '<i class="fa-solid fa-check" style="font-size:30px; color:#0f0;"></i><br><br>PACK MOUNTED';
+                    alert(`[SUCCESS] ${data.msg}\nThe contents are now live on the V-Net.`);
+                } else {
+                    dropZone.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="font-size:30px; color:red;"></i><br><br>MOUNT FAILED';
+                    alert(`[ERROR] ${data.error}`);
+                }
+                setTimeout(() => {
+                    dropZone.innerHTML = '<i class="fa-solid fa-box-open" style="font-size:30px;"></i><br><br>MOUNT_PACK.ZIP';
+                }, 3000);
+            }).catch(err => console.error(err));
+        }
+    </script>
+</body>
+</html>

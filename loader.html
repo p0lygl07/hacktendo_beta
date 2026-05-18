@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HACKTENDO // RECOVERY_MODE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root { --bios-bg: #0000aa; --bios-text: #aaaaaa; --highlight: #ffffff; }
+        body { background: var(--bios-bg); color: var(--bios-text); font-family: 'Courier New', monospace; margin: 0; padding: 40px; }
+        .container { max-width: 800px; margin: auto; border: 2px solid var(--highlight); padding: 20px; box-shadow: 10px 10px 0px #000; }
+        h1 { background: var(--bios-text); color: var(--bios-bg); padding: 5px 10px; text-align: center; font-size: 18px; margin-top: 0; }
+        .menu-item { border: 1px solid transparent; padding: 10px; cursor: pointer; display: flex; justify-content: space-between; }
+        .menu-item:hover { background: var(--bios-text); color: var(--bios-bg); border: 1px solid var(--highlight); }
+        .section-label { color: var(--highlight); border-bottom: 1px solid var(--bios-text); margin: 20px 0 10px 0; padding-bottom: 5px; font-weight: bold; }
+        .status-bar { margin-top: 30px; border-top: 1px solid var(--bios-text); padding-top: 10px; font-size: 12px; }
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HACKTENDO VPU v14.0 - SYSTEM RECOVERY UTILITY</h1>
+        
+        <p>CAUTION: Unauthorized access to Recovery Mode may result in Substrate instability.</p>
+
+        <div class="section-label">SYSTEM MAINTENANCE</div>
+        <div class="menu-item" onclick="systemAction('backup')">
+            <span>> CREATE FULL SYSTEM BACKUP (.ZIP)</span>
+            <span>[RUN]</span>
+        </div>
+        <div class="menu-item" onclick="document.getElementById('cartridge-in').click()">
+            <span>> INSTALL EXTERNAL MISSION CARTRIDGE (.ZIP)</span>
+            <span>[LOAD]</span>
+        </div>
+        <input type="file" id="cartridge-in" onchange="uploadCartridge(this)">
+
+        <div class="section-label">DATABASE & PROFILES</div>
+        <div class="menu-item" onclick="systemAction('wipe_ghost')">
+            <span>> SANITIZE @GHOST DATA (RESET STATS)</span>
+            <span>[WIPE]</span>
+        </div>
+        <div class="menu-item" onclick="window.location.href='/'">
+            <span>> EXIT RECOVERY & BOOT SUBSTRATE</span>
+            <span>[BOOT]</span>
+        </div>
+
+        <div class="status-bar" id="status">
+            STATUS: SYSTEM_READY<br>
+            VANGUARD_LEVEL: 12 (VERIFIED)
+        </div>
+    </div>
+
+    <script>
+        async function systemAction(action) {
+            const status = document.getElementById('status');
+            status.innerHTML = "STATUS: PROCESSING_" + action.toUpperCase() + "...";
+            
+            const res = await fetch('/api/admin/' + action, { method: 'POST' });
+            const data = await res.json();
+            
+            if(data.status === "SUCCESS") {
+                status.innerHTML = "STATUS: " + action.toUpperCase() + " COMPLETE.<br>" + (data.msg || "");
+            } else {
+                status.innerHTML = "STATUS: ERROR - " + data.msg;
+            }
+        }
+
+        async function uploadCartridge(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            document.getElementById('status').innerHTML = "STATUS: EXTRACTING_CARTRIDGE...";
+            
+            const res = await fetch('/api/admin/install_cartridge', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            document.getElementById('status').innerHTML = "STATUS: " + data.status + " - " + data.msg;
+        }
+    </script>
+</body>
+</html>

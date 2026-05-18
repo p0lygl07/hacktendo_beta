@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HACKTENDO // DOSSIER</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root { --vanguard: #ff003c; --gold: #ffcc00; --surface: #0a0a0c; --border: #1a1b1e; --nyx: #00ff41; }
+        body { background: #000; color: #fff; font-family: 'JetBrains Mono', monospace; margin: 0; padding: 40px; display: flex; justify-content: center; }
+        .dossier { width: 600px; border: 1px solid var(--nyx); background: var(--surface); padding: 30px; box-shadow: 0 0 20px rgba(0,255,65,0.1); }
+        .header { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
+        .stat-box { border: 1px solid #222; background: #050505; padding: 15px; text-align: center; width: 22%; }
+        .stat-value { font-size: 24px; color: var(--gold); font-weight: bold; margin-top: 10px; }
+        input, textarea { width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 10px; font-family: inherit; margin-top: 5px; box-sizing: border-box; outline: none; }
+        input:focus, textarea:focus { border-color: var(--nyx); }
+        button { background: var(--nyx); color: #000; font-weight: bold; border: none; padding: 10px 20px; cursor: pointer; margin-top: 15px; width: 100%; }
+        .log-box { height: 150px; background: #000; border: 1px solid #333; padding: 10px; overflow-y: auto; font-size: 11px; color: #8a8d91; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="dossier">
+        <div class="header">
+            <div>
+                <h1 style="margin: 0; color: var(--nyx);"><i class="fa-solid fa-user-secret"></i> @<span id="handle">OPERATOR</span></h1>
+                <p style="margin: 5px 0 0 0; color: #8a8d91; font-size: 12px;">STATUS: ACTIVE OPERATOR</p>
+            </div>
+            <a href="/" style="color: var(--vanguard); text-decoration: none; font-weight: bold;">[RETURN TO OS]</a>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <div class="stat-box">LEVEL<div class="stat-value" id="lvl">1</div></div>
+            <div class="stat-box">TOTAL XP<div class="stat-value" id="xp" style="color:var(--nyx);">0</div></div>
+            <div class="stat-box">LEDGER<div class="stat-value" id="hxt">0.00</div></div>
+            <div class="stat-box">KARMA<div class="stat-value" id="karma">0</div></div>
+        </div>
+
+        <label style="font-size: 12px; color: var(--nyx);">OPERATOR BIO / NOTES</label>
+        <textarea id="bio" rows="4" placeholder="Enter your operator background or target notes here..."></textarea>
+        <button onclick="saveProfile()">UPDATE DOSSIER</button>
+
+        <div class="log-box">
+            <span style="color:var(--vanguard);">[SYS_LOG]</span> Connection established.<br>
+            <span style="color:var(--vanguard);">[SYS_LOG]</span> Fetching ledger integrity... VERIFIED.<br>
+            <span style="color:var(--vanguard);">[SYS_LOG]</span> Blackmarket access granted.
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeHandle = urlParams.get('handle') || 'GHOST';
+
+        async function loadProfile() {
+            const res = await fetch('/api/get_profile', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({handle: activeHandle}) });
+            const data = await res.json();
+            document.getElementById('handle').innerText = data.handle;
+            document.getElementById('lvl').innerText = data.level;
+            document.getElementById('xp').innerText = data.xp;
+            document.getElementById('hxt').innerText = parseFloat(data.currency).toFixed(2);
+            document.getElementById('bio').value = data.bio || '';
+            
+            // KARMA COLOR LOGIC
+            const karmaVal = data.alignment || 0;
+            const karmaElem = document.getElementById('karma');
+            karmaElem.innerText = karmaVal;
+            if (karmaVal > 0) karmaElem.style.color = 'var(--nyx)'; // Green for Whitehat
+            else if (karmaVal < 0) karmaElem.style.color = 'var(--vanguard)'; // Red for Blackhat
+            else karmaElem.style.color = 'var(--gold)'; // Gold for Neutral
+        }
+
+        async function saveProfile() {
+            const bio = document.getElementById('bio').value;
+            await fetch('/api/update_profile', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({handle: activeHandle, bio: bio}) });
+            alert("DOSSIER UPDATED SUCCESSFULLY.");
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+# HACKTENDO // xcore.py - Stealth & Trace Logic
+import os, requests
+from flask import jsonify, request
+
+trace_data = {"heat": 0.0, "is_traced": False, "status": "GHOST"}
+
+def report_to_pcore(xp, karma):
+    try:
+        requests.post('http://127.0.0.1:6060/api/p/report', 
+                      json={"xp": xp, "karma": karma}, timeout=1)
+    except: pass
+
+def x_logic_init(app, bind_route):
+    print("[+] X-CORE: Heat & Trace Engine Online.")
+
+    # Heat Monitor
+    def get_heat():
+        global trace_data
+        path = request.args.get('path', '')
+        if "omnicorp" in path: trace_data["heat"] = min(100, trace_data["heat"] + 1.5)
+        else: trace_data["heat"] = max(0, trace_data["heat"] - 0.5)
+
+        if trace_data["heat"] >= 100: trace_data["status"] = "COMPROMISED"
+        elif trace_data["heat"] > 70: trace_data["status"] = "WARNING"
+        else: trace_data["status"] = "GHOST"
+        return jsonify(trace_data)
+
+    bind_route('/api/x/heat', 'x_api_get_heat', get_heat)
+
+    # Flush Heat (Scrubbing the trace)
+    def flush_heat():
+        global trace_data
+        trace_data.update({"heat": 0.0, "is_traced": False, "status": "GHOST"})
+        
+        # REWARD: 100 XP, -5 Karma (Shadowy activity rewards well but costs reputation)
+        report_to_pcore(100, -5)
+        return jsonify({"success": True, "msg": "Signal scrambled. Trace scrubbed."})
+
+    bind_route('/api/x/flush', 'x_api_flush', flush_heat, methods=['POST'])

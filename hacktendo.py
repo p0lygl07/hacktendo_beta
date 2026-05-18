@@ -1,0 +1,44 @@
+import os
+import sys
+import time
+import subprocess
+
+def print_ascii():
+    ascii_art = """\033[96m
+ ██╗  ██╗ █████╗  ██████╗██╗  ██╗████████╗███████╗███╗   ██╗██████╗  ██████╗ 
+ ██║  ██║██╔══██╗██╔════╝██║ ██╔╝╚══██╔══╝██╔════╝████╗  ██║██╔══██╗██╔═══██╗
+ ███████║███████║██║     █████╔╝    ██║   █████╗  ██╔██╗ ██║██║  ██║██║   ██║
+ ██╔══██║██╔══██║██║     ██╔═██╗    ██║   ██╔══╝  ██║╚██╗██║██║  ██║██║   ██║
+ ██║  ██║██║  ██║╚██████╗██║  ██╗   ██║   ███████╗██║ ╚████║██████╔╝╚██████╔╝
+ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═══╝╚═════╝  ╚═════╝ 
+\033[0m
+\033[95m                    SUBSTRATE KERNEL INITIALIZING...\033[0m
+\033[90m========================================================================\033[0m
+\033[93m ARCHITECT : Joshua Bryant Burton
+ ALIAS     : -P0LYGL07- >'0'<
+ STATUS    : ENCRYPTED // IMMUTABLE\033[0m
+\033[90m========================================================================\033[0m
+    """
+    print(ascii_art)
+
+def boot_sequence():
+    os.system('clear' if os.name == 'posix' else 'cls')
+    print_ascii()
+    
+    print("\033[96m[SYSTEM] Verifying matrix integrity...\033[0m")
+    time.sleep(1)
+    print("\033[92m[SUCCESS] Cryptographic signatures accepted.\033[0m")
+    time.sleep(0.5)
+    print("\033[96m[SYSTEM] Engaging Core Logic...\033[0m")
+    time.sleep(1)
+    print("\n\033[91m>> WELCOME TO THE V-NET <<\033[0m\n")
+
+    try:
+        # Executes the core matrix
+        subprocess.run([sys.executable, "core.py"])
+    except KeyboardInterrupt:
+        print("\n\033[91m[SYSTEM] Substrate shutdown sequence initiated.\033[0m")
+        sys.exit(0)
+
+if __name__ == "__main__":
+    boot_sequence()

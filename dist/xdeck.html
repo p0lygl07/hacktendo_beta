@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { background: #000; color: #ff00ff; font-family: monospace; padding: 20px; }
+        .monitor { border: 2px solid #ff00ff; padding: 20px; background: #050005; box-shadow: inset 0 0 15px #ff00ff; }
+        #heat-val { font-size: 40px; font-weight: bold; }
+        .status-msg { margin-top: 10px; font-size: 12px; letter-spacing: 2px; }
+        .danger { color: red; text-shadow: 0 0 10px red; animation: blink 0.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="monitor">
+        <div>HEURISTIC_TRACE_DETECTION</div>
+        <div id="heat-val">0.0%</div>
+        <div id="status" class="status-msg">STATUS: GHOST</div>
+    </div>
+
+    <script>
+        async function updateMonitor() {
+            // In a real scenario, we'd pull the path from the ShBrowser
+            const res = await fetch('/api/x/heat?path=omnicorp/vault'); 
+            const data = await res.json();
+
+            const hVal = document.getElementById('heat-val');
+            const sVal = document.getElementById('status');
+            
+            hVal.innerText = data.heat.toFixed(1) + "%";
+            sVal.innerText = "STATUS: " + data.status;
+
+            if (data.heat > 80) {
+                hVal.className = "danger";
+            } else {
+                hVal.className = "";
+            }
+        }
+        setInterval(updateMonitor, 1000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { background: #050000; color: #ff003c; font-family: 'Courier New', monospace; padding: 20px; border: 2px solid #300; height: 100vh; overflow: hidden; }
+        .glitch { animation: glitch 1s linear infinite; font-weight: bold; font-size: 20px; }
+        @keyframes glitch { 0% { opacity: 1; } 50% { opacity: 0.8; transform: skew(2deg); } 100% { opacity: 1; } }
+        .mission-card { border: 1px solid #ff003c; padding: 15px; margin-top: 15px; background: rgba(255, 0, 60, 0.05); cursor: pointer; }
+        .mission-card:hover { background: #ff003c; color: #000; }
+        .intel-stream { font-size: 10px; color: #600; margin-top: 30px; border-top: 1px solid #300; padding-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="glitch">THE_VOID // DARK_ARTS_INTEL</div>
+    <p>Kage's Private Bounty Board. High Risk. Infinite Reward.</p>
+
+    <div class="mission-card" onclick="alert('Mission Uploading to Terminal...')">
+        [OP: BLACK_FRIDAY] -> Drain OmniCorp Payroll Relays<br>
+        REWARD: 50,000 HXT | KARMA: -500
+    </div>
+
+    <div class="mission-card">
+        [OP: SILENCE] -> Shut down the city's power grid monitor<br>
+        REWARD: 12,000 HXT | KARMA: -200
+    </div>
+
+    <div class="intel-stream">
+        > TRACE_DETECTED in Sector 7...<br>
+        > Global Entropy rising: 14%...<br>
+        > Kage: "The bigger they are, the harder they crash."
+    </div>
+</body>
+</html>

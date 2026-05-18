@@ -1,0 +1,38 @@
+// HACKTENDO // s-deck Expansion UI
+socket.on('unlock_dock_tool', data => {
+    const dock = document.getElementById('dock');
+    const existing = document.getElementById(`btn-${data.type}`);
+    if (existing) return;
+
+    const btn = document.createElement('i');
+    btn.id = `btn-${data.type}`;
+    
+    if (data.type === "DARK") {
+        btn.className = "fa-solid fa-skull dock-item";
+        btn.style.color = "#ff003c";
+        btn.title = "Dark Arts";
+        btn.onclick = () => OS.openExpansionWindow('dark-arts', '#ff003c');
+    } else {
+        btn.className = "fa-solid fa-shield-halved dock-item";
+        btn.style.color = "cyan";
+        btn.title = "Light Arts";
+        btn.onclick = () => OS.openExpansionWindow('light-arts', 'cyan');
+    }
+    dock.appendChild(btn);
+});
+
+OS.openExpansionWindow = function(slug, color) {
+    const id = `win-${slug}`;
+    if(!document.getElementById(id)) {
+        const w = document.createElement('div');
+        w.id = id; w.className = 'window';
+        w.style.cssText = `top:120px; left:300px; width:800px; height:500px; border-color:${color}; display:flex;`;
+        w.innerHTML = `
+            <div class="window-header"><span>${slug.toUpperCase()}_v1.0</span><i class="fa-solid fa-xmark" onclick="document.getElementById('${id}').style.display='none'"></i></div>
+            <div class="window-content"><iframe src="/${slug}" style="width:100%; height:100%; border:none;"></iframe></div>`;
+        document.getElementById('desktop').appendChild(w);
+        OS.makeWindowsDraggable();
+    } else {
+        document.getElementById(id).style.display = 'flex';
+    }
+};

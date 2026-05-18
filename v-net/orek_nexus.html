@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 40px; }
+        .glitch { font-size: 30px; font-weight: bold; text-shadow: 2px 2px #f00; }
+        .node-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 30px; }
+        .node { border: 1px solid #0f0; padding: 10px; text-align: center; font-size: 10px; opacity: 0.6; }
+        .node:hover { opacity: 1; background: #0f0; color: #000; }
+        /* HIDDEN DATA FOR OREK HUD */
+        #intel-meta { display: none; visibility: hidden; }
+    </style>
+</head>
+<body>
+    <div class="glitch">OREK_NEXUS // ROOT</div>
+    <p>Welcome to the sub-grid. The standard browser can't see this frequency.</p>
+    
+    <div class="node-grid">
+        <div class="node">RELAY_ALPHA</div><div class="node">RELAY_BETA</div>
+        <div class="node">RELAY_GAMMA</div><div class="node">RELAY_DELTA</div>
+    </div>
+
+    <div id="intel-meta" data-origin="SECTOR_9" data-encryption="GHOST-256" data-leak="BAZAAR_LINK_ENCRYPTED"></div>
+
+    <div style="margin-top: 50px; font-size: 11px; color: #444;">
+        > OREK: "The truth isn't on the page. It's in the packets."
+    </div>
+</body>
+</html>

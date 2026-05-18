@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { background: #050505; color: #00ccff; font-family: monospace; padding: 20px; }
+        .tab-bar { display: flex; border-bottom: 1px solid #00ccff; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; cursor: pointer; border: 1px solid transparent; }
+        .tab.active { border: 1px solid #00ccff; border-bottom: none; background: #00111a; }
+        .tool-card { border: 1px solid #111; background: #080808; padding: 15px; margin-bottom: 10px; border-left: 3px solid #00ccff; }
+        .btn-buy { background: #00ccff; color: #000; border: none; padding: 5px 10px; cursor: pointer; float: right; font-weight: bold; }
+        .m-input { width: 90%; background: #000; color: #00ccff; border: 1px solid #004466; padding: 8px; margin-bottom: 10px; outline: none; }
+        button { background: #004466; color: #fff; border: 1px solid #00ccff; padding: 8px 15px; cursor: pointer; }
+        button:hover { background: #00ccff; color: #000; }
+    </style>
+</head>
+<body>
+    <div class="tab-bar">
+        <div class="tab active" onclick="showTab('library')">LIBRARY</div>
+        <div class="tab" onclick="showTab('store')">STORE</div>
+        <div class="tab" onclick="showTab('installer')">INSTALLER</div>
+    </div>
+
+    <div id="library" class="view">
+        <h3>INSTALLED_TOOLS</h3>
+        <div id="wiki-list"></div>
+    </div>
+
+    <div id="store" class="view" style="display:none;">
+        <h3>VANGUARD_MARKET</h3>
+        <div class="tool-card" style="border-color: #ffdf00;">
+            <button class="btn-buy" onclick="window.open('https://p7wl.lemonsqueezy.com/', '_blank')" style="background:#ffdf00;">VISIT STORE</button>
+            <strong>OFFICIAL TOOL SHOP</strong>
+            <div style="color:#888; font-size:11px;">External link to secure Vanguard payloads.</div>
+        </div>
+        <div id="store-list"></div>
+    </div>
+
+    <div id="installer" class="view" style="display:none;">
+        <div class="tool-card">
+            <h3>ZIP_PAYLOAD_INSTALLER</h3>
+            <input type="file" id="zip-file">
+            <button onclick="runInstaller()">MOUNT_ZIP_PAYLOAD</button>
+        </div>
+
+        <div class="tool-card" style="margin-top: 20px; border-color: #ff00ff;">
+            <h3>MANUAL_TOOL_REGISTRATION</h3>
+            <p style="font-size: 11px; color: #888;">Manually index local tools (nmap, hydra, etc.) into the manifest.</p>
+            <input type="text" id="m-name" class="m-input" placeholder="Tool Name (e.g. nmap)">
+            <input type="text" id="m-usage" class="m-input" placeholder="Usage (e.g. nmap -sV [IP])">
+            <button onclick="registerManual()">ADD TO MANIFEST</button>
+        </div>
+    </div>
+
+    <script>
+        function showTab(id) {
+            document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(id).style.display = 'block';
+            event.currentTarget.classList.add('active');
+            if(id === 'library') loadLibrary();
+            if(id === 'store') loadStore();
+        }
+
+        async function loadLibrary() {
+            const res = await fetch('/api/tools/wiki');
+            const data = await res.json();
+            const list = document.getElementById('wiki-list');
+            list.innerHTML = Object.entries(data).map(([name, info]) => `
+                <div class="tool-card">
+                    <strong>${name.toUpperCase()}</strong> - ${info.desc}
+                    <div style="color:gold; font-size:11px;">Usage: ${info.usage}</div>
+                </div>
+            `).join('');
+        }
+
+        async function loadStore() {
+            const res = await fetch('/api/tools/store');
+            const data = await res.json();
+            const list = document.getElementById('store-list');
+            
+            // FIX: Wired the button to the buyTool function instead of a hardcoded alert
+            list.innerHTML = Object.entries(data).map(([name, info]) => `
+                <div class="tool-card">
+                    <button class="btn-buy" onclick="buyTool('${name}', ${info.price})">${info.price} HXT</button>
+                    <strong>${name.replace('_', ' ').toUpperCase()}</strong>
+                    <div style="color:#888; font-size:11px;">Contains: ${info.content}</div>
+                </div>
+            `).join('');
+        }
+
+        // NEW: The actual purchase engine
+        async function buyTool(tool_id, cost) {
+            try {
+                const res = await fetch('/api/tools/purchase', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: tool_id, cost: cost })
+                });
+                const data = await res.json();
+                
+                // Alert the message from Python (Success or Real Error)
+                alert(data.msg); 
+                
+                // If it worked, reload the library so they can see it!
+                if(data.success) {
+                    showTab('library');
+                }
+            } catch (e) {
+                alert("Connection to Tri-Core severed.");
+            }
+        }
+
+        async function runInstaller() {
+            const fileInput = document.getElementById('zip-file');
+            if(!fileInput.files[0]) return alert("Select a file.");
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            const res = await fetch('/api/tools/install', { method: 'POST', body: formData });
+            const data = await res.json();
+            alert(data.msg || data.error);
+            loadLibrary();
+        }
+
+        async function registerManual() {
+            const name = document.getElementById('m-name').value;
+            const usage = document.getElementById('m-usage').value;
+            
+            if(!name || !usage) return alert("Fill all fields.");
+
+            const res = await fetch('/api/tools/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, usage, desc: "Manual System Index" })
+            });
+            
+            const data = await res.json();
+            alert(data.msg || data.error);
+            loadLibrary();
+        }
+
+        loadLibrary();
+    </script>
+</body>
+</html>

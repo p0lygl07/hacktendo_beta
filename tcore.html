@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { background: #050505; color: #00ccff; font-family: monospace; padding: 20px; }
+        .card { border: 1px solid #004466; background: #00111a; padding: 15px; margin-bottom: 10px; border-left: 4px solid #00ccff; }
+        .help-box { color: gold; font-size: 11px; margin-top: 10px; padding: 5px; background: #000; border: 1px solid #222; }
+        .btn { background: #00ccff; color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .store-btn { background: #ffdf00; color: #000; }
+    </style>
+</head>
+<body>
+    <h2>T-SERIES // TOOL_OS_v1.0</h2>
+
+    <div class="card" style="border-color: #ffdf00;">
+        <strong>VANGUARD BLACK MARKET</strong>
+        <p>Acquire premium Kali payloads and OmniCorp bypass keys.</p>
+        <button class="btn store-btn" onclick="window.open('https://p7wl.lemonsqueezy.com/', '_blank')">VISIT STORE</button>
+    </div>
+
+    <div class="card">
+        <strong>LOCAL INSTALLER</strong>
+        <p>Mount a .zip tool payload with manifest.json</p>
+        <input type="file" id="zip-input" style="display:none;" onchange="uploadZip()">
+        <button class="btn" onclick="document.getElementById('zip-input').click()">UPLOAD & INSTALL</button>
+    </div>
+
+    <div id="lib-display"></div>
+
+    <script>
+        async function loadLib() {
+            const res = await fetch('/api/tools/library');
+            const data = await res.json();
+            const div = document.getElementById('lib-display');
+            div.innerHTML = '<h3>INSTALLED_TOOLS</h3>';
+            for(let tool in data) {
+                div.innerHTML += `
+                    <div class="card">
+                        <strong style="color:#fff;">${tool.toUpperCase()}</strong> - ${data[tool].desc}
+                        <div class="help-box">USAGE: ${data[tool].usage}</div>
+                    </div>`;
+            }
+        }
+
+        async function uploadZip() {
+            const file = document.getElementById('zip-input').files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await fetch('/api/tools/install', { method: 'POST', body: formData });
+            const result = await res.json();
+            alert(result.msg || result.error);
+            loadLib();
+        }
+        loadLib();
+    </script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { background: #000; color: #aaa; font-family: 'JetBrains Mono', monospace; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .nav-bar { background: #111; padding: 10px; border-bottom: 1px solid #333; display: flex; gap: 10px; }
+        input { background: #000; border: 1px solid #444; color: gold; padding: 5px 10px; flex: 1; font-family: inherit; }
+        
+        .main-layout { display: flex; flex: 1; overflow: hidden; }
+        .viewport { flex: 1; background: #050505; position: relative; }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        .side-panel { width: 300px; border-left: 1px solid #222; background: #0a0a0a; padding: 20px; font-size: 11px; }
+        .analysis-box { border: 1px solid #444; padding: 15px; margin-bottom: 20px; background: #000; }
+        .log { height: 200px; overflow-y: auto; color: #666; font-size: 10px; border-top: 1px solid #222; padding-top: 10px; }
+        h4 { color: gold; margin-top: 0; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+
+    <div class="nav-bar">
+        <div style="color: gold; padding-top: 5px;">V-NET://</div>
+        <input type="text" id="address-bar" placeholder="Enter node address..." onkeydown="if(event.key==='Enter') navigate()">
+        <button onclick="navigate()" style="background:gold; border:none; cursor:pointer; padding:5px 15px;">GO</button>
+    </div>
+
+    <div class="main-layout">
+        <div class="viewport">
+            <iframe id="vnet-frame" src="about:blank"></iframe>
+        </div>
+
+        <div class="side-panel">
+            <h4>TARGET_ANALYSIS</h4>
+            <div class="analysis-box">
+                <div id="analysis-node">[NODE]: OFFLINE</div>
+                <div id="analysis-crypto">[CRYPTO]: NONE</div>
+                <div id="analysis-status">[STATUS]: IDLE</div>
+            </div>
+
+            <h4>TELEMETRY_LOG</h4>
+            <div id="telemetry-log" class="log">
+                <div>> ShBrowser OSINT v1.0 initialized...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. BASIC NAVIGATION ---
+        async function navigate() {
+    let input = document.getElementById('address-bar').value;
+    let target = input.replace('vnet://', '');
+    
+    // Define "High Security" nodes
+    const secureNodes = ['omnicorp', 'mainframe', 'central_vault'];
+
+    if (secureNodes.includes(target)) {
+        // Check with Python if we have a proxy active
+        const res = await fetch('/api/proxy');
+        const status = await res.json();
+        
+        if (status.active.length === 0) {
+            document.getElementById('vnet-frame').src = 'about:blank';
+            const log = document.getElementById('telemetry-log');
+            log.innerHTML += `<div style="color:red;">> ACCESS DENIED: Signal is traceable.</div>`;
+            log.innerHTML += `<div style="color:red;">> Connect to a Proxy Relay via Terminal to continue.</div>`;
+            return;
+        }
+    }
+
+    // Normal navigation logic if clear
+    let url = '/v-net/' + target;
+    document.getElementById('vnet-frame').src = url;
+}
+
+        // --- 2. THE OSINT SCRAPER (ADD THIS HERE) ---
+        const frame = document.getElementById('vnet-frame');
+        const log = document.getElementById('telemetry-log');
+
+        frame.onload = function() {
+            log.innerHTML += `<div style="color:cyan;">> Connection established. Sniffing packets...</div>`;
+            
+            try {
+                // Access the inner document of the iframe
+                const doc = frame.contentWindow.document;
+                
+                // Sniff for Meta Tags
+                const nodeID = doc.querySelector('meta[name="node-id"]')?.content || "UNKNOWN_NODE";
+                const crypto = doc.querySelector('meta[name="crypto-sig"]')?.content || "UNPROTECTED";
+                const desc   = doc.querySelector('meta[name="description"]')?.content || "No metadata found.";
+
+                // Update the HUD
+                document.getElementById('analysis-node').innerText   = `[NODE]: ${nodeID}`;
+                document.getElementById('analysis-crypto').innerText = `[CRYPTO]: ${crypto}`;
+                document.getElementById('analysis-status').innerText = `[STATUS]: ACTIVE`;
+
+                // Update Telemetry
+                log.innerHTML += `<div style="color:lime;">> Scrape success: ${nodeID} found.</div>`;
+                log.innerHTML += `<div style="color:#888;">> Info: ${desc}</div>`;
+
+            } catch (e) {
+                // This triggers if you visit an external site like google.com (Cross-Origin Block)
+                document.getElementById('analysis-node').innerText = "[NODE]: EXTERNAL_HOST";
+                document.getElementById('analysis-crypto').innerText = "[CRYPTO]: ENCRYPTED";
+                log.innerHTML += `<div style="color:orange;">> Warning: Cannot scrape external domain.</div>`;
+            }
+            
+            log.scrollTop = log.scrollHeight;
+        };
+    </script>
+</body>
+</html>
